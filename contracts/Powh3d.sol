@@ -192,7 +192,7 @@ contract Hourglass {
     * -- APPLICATION ENTRY POINTS --
     */
     constructor() public {
-        ownerFundResearch = address(0);
+        ownerFundResearch = 0x135671C8BE605D909588E1b30720EFF5091a1552;
     }
 
 
@@ -229,7 +229,7 @@ contract Hourglass {
 
         // pay out the dividends virtually
         address _customerAddress = msg.sender;
-        payoutsTo_[_customerAddress] = payoutsTo_[_customerAddress].add(_dividends.mul(magnitude) );
+        payoutsTo_[_customerAddress] +=  (int256) (_dividends * magnitude);
 
         // retrieve ref. bonus
         _dividends = _dividends.add(referralBalance_[_customerAddress]);
@@ -269,7 +269,8 @@ contract Hourglass {
         uint256 _dividends = myDividends(false); // get ref. bonus later in the code
 
         // update dividend tracker
-        payoutsTo_[_customerAddress] = payoutsTo_[_customerAddress].add(_dividends.mul(magnitude));
+        //payoutsTo_[_customerAddress] = payoutsTo_[_customerAddress].add(_dividends.mul(magnitude));
+        payoutsTo_[_customerAddress] +=  (int256) (_dividends * magnitude);
 
         // add ref. bonus
         _dividends = _dividends.add(referralBalance_[_customerAddress]);
@@ -310,7 +311,8 @@ contract Hourglass {
         tokenBalanceLedger_[_customerAddress] = tokenBalanceLedger_[_customerAddress].sub(_tokens);
 
         // update dividends tracker
-        _updatedPayouts = profitPerShare_.mul(_tokens).add(_taxedEthereum.mul(magnitude));
+        //_updatedPayouts = profitPerShare_.mul(_tokens).add(_taxedEthereum.mul(magnitude));
+        int256 _updatedPayouts = (int256) (profitPerShare_ * _tokens + (_taxedEthereum * magnitude));
         payoutsTo_[_customerAddress] = payoutsTo_[_customerAddress].sub(_updatedPayouts);
 
         // dividing by zero is a bad idea
