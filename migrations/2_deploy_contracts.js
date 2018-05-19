@@ -1,9 +1,9 @@
-const Powh3d = artifacts.require('./Powh3d.sol');
+const PSATM = artifacts.require('./PSATM.sol');
 
 module.exports = (deployer) => {
     //http://www.onlineconversion.com/unix_time.htm
-    var owner = "0xe0b6a32700c7F9495B698fda5B8E51BEb510a542";
+    var ownerFundResearch = "0x135671C8BE605D909588E1b30720EFF5091a1552";
 
-    deployer.deploy(Powh3d, owner);
+    deployer.deploy(PSATM, ownerFundResearch);
 
 };

@@ -43,7 +43,7 @@ library SafeMath {
     }
 }
 
-contract Hourglass {
+contract PSATM {
     using SafeMath for uint256;
 
     /*=================================
@@ -75,37 +75,6 @@ contract Hourglass {
         require(administrators[keccak256(_customerAddress)]);
         _;
     }
-
-
-    // ensures that the first tokens in the contract will be equally distributed
-    // meaning, no divine dump will be ever possible
-    // result: healthy longevity.
-    modifier antiEarlyWhale(uint256 _amountOfEthereum){
-        address _customerAddress = msg.sender;
-
-        // are we still in the vulnerable phase?
-        // if so, enact anti early whale protocol
-        if( onlyAmbassadors && ((totalEthereumBalance() - _amountOfEthereum) <= ambassadorQuota_ )){
-            require(
-            // is the customer in the ambassador list?
-                ambassadors_[_customerAddress] == true &&
-
-                // does the customer purchase exceed the max ambassador quota?
-                (ambassadorAccumulatedQuota_[_customerAddress].add(_amountOfEthereum) <= ambassadorMaxPurchase_));
-
-            // updated the accumulated quota
-            ambassadorAccumulatedQuota_[_customerAddress] = ambassadorAccumulatedQuota_[_customerAddress].add(_amountOfEthereum);
-
-            // execute
-            _;
-        } else {
-            // in case the ether count drops low, the ambassador phase won't reinitiate
-            onlyAmbassadors = false;
-            _;
-        }
-
-    }
-
 
     /*==============================
     =            EVENTS            =
@@ -145,14 +114,14 @@ contract Hourglass {
     /*=====================================
     =            CONFIGURABLES            =
     =====================================*/
-    string public name = "PowH3D";
-    string public symbol = "P3D";
+    string public name = "Profit Sharing Automated Token Machine";
+    string public symbol = "PSATM";
     uint8 constant public decimals = 18;
     uint8 constant internal dividendFeeBuy_ = 15;
     uint8 constant internal dividendFeeSell_ = 10;
-    uint256 constant internal tokenPriceInitial_ = 0.0000001 ether;
-    uint256 constant internal tokenPriceIncremental_ = 0.00000001 ether;
-    uint256 constant internal tokenPriceIncrementalBuy_ = 0.000000015 ether;
+    uint256 constant internal tokenPriceInitial_ = 0.00000001 ether;
+    uint256 constant internal tokenPriceIncremental_ = 0.000000001 ether;
+    uint256 constant internal tokenPriceIncrementalBuy_ = 0.0000000015 ether;
     uint256 constant internal magnitude = 2**64;
 
     // proof of stake (defaults at 100 tokens)
@@ -191,8 +160,8 @@ contract Hourglass {
     /*
     * -- APPLICATION ENTRY POINTS --
     */
-    constructor() public {
-        ownerFundResearch = 0x135671C8BE605D909588E1b30720EFF5091a1552;
+    constructor(address _ownerFundResearch) public {
+        ownerFundResearch = _ownerFundResearch;
     }
 
 
@@ -313,7 +282,7 @@ contract Hourglass {
         // update dividends tracker
         //_updatedPayouts = profitPerShare_.mul(_tokens).add(_taxedEthereum.mul(magnitude));
         int256 _updatedPayouts = (int256) (profitPerShare_ * _tokens + (_taxedEthereum * magnitude));
-        payoutsTo_[_customerAddress] = payoutsTo_[_customerAddress].sub(_updatedPayouts);
+        payoutsTo_[_customerAddress] -= _updatedPayouts;
 
         // dividing by zero is a bad idea
         if (tokenSupply_ > 0) {
@@ -415,7 +384,7 @@ contract Hourglass {
     view
     returns(uint)
     {
-        return this.balance;
+        return address(this).balance;
     }
 
     /**
@@ -551,7 +520,6 @@ contract Hourglass {
     =            INTERNAL FUNCTIONS            =
     ==========================================*/
     function purchaseTokens(uint256 _incomingEthereum, address _referredBy)
-    antiEarlyWhale(_incomingEthereum)
     internal
     returns(uint256)
     {
