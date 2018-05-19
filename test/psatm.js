@@ -81,7 +81,12 @@ it('verification of buy Token', async ()  => {
         //console.log("totalSupplySell = " + totalSupply);
         assert.equal(true, Number(balanceThree) > Number(balanceFour));
 
-    });
+        await contract.buy(accounts[1], {from:accounts[5], value:buyWei});
+        var balanceFive = await contract.balanceOf(accounts[5]);
+        assert.equal(true, Number(balanceFour) > Number(balanceFive));
+        //console.log("balanceFive = " + balanceFive);
+
+});
 
     it('verification of sellPrice and buyPrice after the purchase', async ()  => {
         var sellPrice = await contract.sellPrice();

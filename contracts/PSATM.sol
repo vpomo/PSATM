@@ -599,7 +599,7 @@ contract PSATM {
     returns(uint256)
     {
         uint256 _tokenPriceInitial = tokenPriceInitial_ * 1e18;
-        uint256 valueSqrt = (
+        uint256 valueSqrt = sqrt(
         (_tokenPriceInitial**2)
         +
         (2*(tokenPriceIncrementalBuy_ * 1e18)*(_ethereum * 1e18))
