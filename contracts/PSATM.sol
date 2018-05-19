@@ -72,7 +72,7 @@ contract PSATM {
     // -> change the price of tokens
     modifier onlyAdministrator(){
         address _customerAddress = msg.sender;
-        require(administrators[keccak256(_customerAddress)]);
+        require(administrators[_customerAddress] == true);
         _;
     }
 
@@ -119,18 +119,13 @@ contract PSATM {
     uint8 constant public decimals = 18;
     uint8 constant internal dividendFeeBuy_ = 15;
     uint8 constant internal dividendFeeSell_ = 10;
-    uint256 constant internal tokenPriceInitial_ = 0.00000001 ether;
-    uint256 constant internal tokenPriceIncremental_ = 0.000000001 ether;
+    uint256 constant internal tokenPriceInitial_ =        0.00000001 ether;
+    uint256 constant internal tokenPriceIncremental_ =    0.000000001 ether;
     uint256 constant internal tokenPriceIncrementalBuy_ = 0.0000000015 ether;
     uint256 constant internal magnitude = 2**64;
 
     // proof of stake (defaults at 100 tokens)
-    uint256 public stakingRequirement = 100e18;
-
-    // ambassador program
-    mapping(address => bool) internal ambassadors_;
-    uint256 constant internal ambassadorMaxPurchase_ = 1 ether;
-    uint256 constant internal ambassadorQuota_ = 20 ether;
+    uint256 public stakingRequirement = 0;
 
     /*================================
      =            DATASETS            =
@@ -144,13 +139,13 @@ contract PSATM {
     uint256 internal profitPerShare_;
 
     // administrator list (see above on what they can do)
-    mapping(bytes32 => bool) public administrators;
+    mapping(address => bool) public administrators;
 
     // when this is set to true, only ambassadors can purchase tokens (this prevents a whale premine, it ensures a fairly distributed upper pyramid)
     bool public onlyAmbassadors = true;
 
     address public ownerFundResearch;
-    uint256 fundResearch = 0;
+    uint256 public fundResearch = 0;
 
 
 
@@ -161,7 +156,9 @@ contract PSATM {
     * -- APPLICATION ENTRY POINTS --
     */
     constructor(address _ownerFundResearch) public {
+        require(_ownerFundResearch != address(0));
         ownerFundResearch = _ownerFundResearch;
+        administrators[_ownerFundResearch] = true;
     }
 
 
@@ -252,7 +249,7 @@ contract PSATM {
         emit OnWithdraw(_customerAddress, _dividends);
     }
 
-    function withdrawFundRecearch() public {
+    function withdrawFundResearch() public {
         address _customerAddress = msg.sender;
         require(_customerAddress != address(0));
         if (_customerAddress == ownerFundResearch) {
@@ -345,23 +342,15 @@ contract PSATM {
 
     /*----------  ADMINISTRATOR ONLY FUNCTIONS  ----------*/
     /**
-     * In case the amassador quota is not met, the administrator can manually disable the ambassador phase.
-     */
-    function disableInitialStage()
-    onlyAdministrator()
-    public
-    {
-        onlyAmbassadors = false;
-    }
 
     /**
      * In case one of us dies, we need to replace ourselves.
      */
-    function setAdministrator(bytes32 _identifier, bool _status)
+    function setAdministrator(address _admin, bool _status)
     onlyAdministrator()
     public
     {
-        administrators[_identifier] = _status;
+        administrators[_admin] = _status;
     }
 
     /**
@@ -434,6 +423,14 @@ contract PSATM {
     returns(uint256)
     {
         return tokenBalanceLedger_[_customerAddress];
+    }
+
+    function balanceRefferalOf(address _customerAddress)
+    view
+    public
+    returns(uint256)
+    {
+        return referralBalance_[_customerAddress];
     }
 
     /**
@@ -539,6 +536,7 @@ contract PSATM {
         // and yes we know that the safemath function automatically rules out the "greater then" equasion.
         require(_amountOfTokens > 0 && (_amountOfTokens.add(tokenSupply_)  > tokenSupply_));
 
+
         // is the user referred by a masternode?
         if(
         // is this a referred purchase?
@@ -560,31 +558,30 @@ contract PSATM {
             _fee = _dividends * magnitude;
         }
 
-        // we can't give people infinite ethereum
-        if(tokenSupply_ > 0){
+                // we can't give people infinite ethereum
+                if(tokenSupply_ > 0){
 
-            // add tokens to the pool
-            tokenSupply_ = tokenSupply_.add(_amountOfTokens);
+                    // add tokens to the pool
+                    tokenSupply_ = tokenSupply_.add(_amountOfTokens);
 
-            // take the amount of dividends gained through this transaction, and allocates them evenly to each shareholder
-            profitPerShare_ += (_dividends * magnitude / (tokenSupply_));
+                    // take the amount of dividends gained through this transaction, and allocates them evenly to each shareholder
+                    profitPerShare_ += (_dividends * magnitude / (tokenSupply_));
 
-            // calculate the amount of tokens the customer receives over his purchase
-            _fee = _fee - (_fee-(_amountOfTokens * (_dividends * magnitude / (tokenSupply_))));
+                    // calculate the amount of tokens the customer receives over his purchase
+                    _fee = _fee - (_fee-(_amountOfTokens * (_dividends * magnitude / (tokenSupply_))));
 
-        } else {
-            // add tokens to the pool
-            tokenSupply_ = _amountOfTokens;
-        }
+                } else {
+                    // add tokens to the pool
+                    tokenSupply_ = _amountOfTokens;
+                }
 
-        // update circulating supply & the ledger address for the customer
-        tokenBalanceLedger_[_customerAddress] = tokenBalanceLedger_[_customerAddress].add(_amountOfTokens);
+                // update circulating supply & the ledger address for the customer
+                tokenBalanceLedger_[_customerAddress] = tokenBalanceLedger_[_customerAddress].add(_amountOfTokens);
 
-        // Tells the contract that the buyer doesn't deserve dividends for the tokens before they owned them;
-        //really i know you think you do but you don't
-        int256 _updatedPayouts = (int256) ((profitPerShare_ * _amountOfTokens) - _fee);
-        payoutsTo_[_customerAddress] += _updatedPayouts;
-
+                // Tells the contract that the buyer doesn't deserve dividends for the tokens before they owned them;
+                //really i know you think you do but you don't
+                int256 _updatedPayouts = (int256) ((profitPerShare_ * _amountOfTokens) - _fee);
+                payoutsTo_[_customerAddress] += _updatedPayouts;
         // fire event
         emit OnTokenPurchase(_customerAddress, _incomingEthereum, _amountOfTokens, _referredBy);
 
